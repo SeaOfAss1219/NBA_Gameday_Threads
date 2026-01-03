@@ -1,10 +1,10 @@
 name: NBA Game Threads
 
 on:
-  # Run every day at 12:00 PM EST (17:00 UTC)
-  # Note: EST is UTC-5, so 12:00 PM EST = 17:00 UTC
+  # Run every day at 10:08 PM EST (03:08 UTC next day)
+  # Note: EST is UTC-5, so 10:08 PM EST = 03:08 UTC
   schedule:
-    - cron: '0 17 * * *'
+    - cron: '8 3 * * *'
   
   # Allow manual trigger for testing
   workflow_dispatch:
