@@ -32,10 +32,10 @@ async def fetch_todays_games():
 
 
 def parse_game_info(event):
-    """Extract away and home team names from an ESPN event."""
+    """Extract away and home team names and game time from an ESPN event."""
     competitions = event.get("competitions", [])
     if not competitions:
-        return None, None
+        return None, None, None
     
     competition = competitions[0]
     competitors = competition.get("competitors", [])
@@ -44,13 +44,30 @@ def parse_game_info(event):
     home_team = None
     
     for competitor in competitors:
-        team_name = competitor.get("team", {}).get("displayName", "Unknown")
+        team_name = competitor.get("team", {}).get("shortDisplayName", "Unknown")
         if competitor.get("homeAway") == "away":
             away_team = team_name
         elif competitor.get("homeAway") == "home":
             home_team = team_name
     
-    return away_team, home_team
+    # Get game time and convert to EST
+    game_time_str = event.get("date", "")
+    tipoff_time = None
+    
+    if game_time_str:
+        try:
+            # ESPN returns time in UTC (ISO format)
+            from datetime import timezone, timedelta
+            utc_time = datetime.fromisoformat(game_time_str.replace("Z", "+00:00"))
+            # Convert to EST (UTC-5)
+            est = timezone(timedelta(hours=-5))
+            est_time = utc_time.astimezone(est)
+            tipoff_time = est_time.strftime("%I:%M %p").lstrip("0")  # e.g., "7:30 PM"
+        except Exception as e:
+            print(f"Error parsing game time: {e}")
+            tipoff_time = "TBD"
+    
+    return away_team, home_team, tipoff_time
 
 
 async def delete_existing_threads(channel):
@@ -84,10 +101,10 @@ async def delete_existing_threads(channel):
     return deleted_count
 
 
-async def create_game_thread(channel, away_team, home_team):
+async def create_game_thread(channel, away_team, home_team, tipoff_time):
     """Create a thread for a game."""
     thread_name = f"{away_team} vs {home_team}"
-    opening_message = f"This is the game day chat room for the {away_team} vs {home_team} game!"
+    opening_message = f"This is the game day chat room for the {away_team} vs {home_team} game!\n\nTip-off time: {tipoff_time} EST"
     
     try:
         # Create a public thread
@@ -139,9 +156,9 @@ async def on_ready():
         
         # Create a thread for each game
         for game in games:
-            away_team, home_team = parse_game_info(game)
+            away_team, home_team, tipoff_time = parse_game_info(game)
             if away_team and home_team:
-                await create_game_thread(channel, away_team, home_team)
+                await create_game_thread(channel, away_team, home_team, tipoff_time or "TBD")
                 # Small delay to avoid rate limiting
                 await asyncio.sleep(1)
     
@@ -165,3 +182,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
