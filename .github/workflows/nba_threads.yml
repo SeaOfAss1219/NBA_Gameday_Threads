@@ -4,7 +4,7 @@ on:
   # Run every day at 10:25 PM EST (03:25 UTC next day)
   # Note: EST is UTC-5, so 10:25 PM EST = 03:25 UTC
   schedule:
-    - cron: '25 3 * * *'
+    - cron: '57 2 * * *'
   
   # Allow manual trigger for testing
   workflow_dispatch:
